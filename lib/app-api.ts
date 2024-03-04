@@ -65,6 +65,19 @@ export class AppApi extends Construct {
         reviewsTable.grantReadData(getMovieReviewsFn)
 
 
+        const getAllReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetAllReviewsByAuthorFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/getAllReviewsByAuthor.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadData(getAllReviewsByAuthorFn)
+
         //REST API
         const api = new apig.RestApi(this, "RestAPI", {
                 description: "Assignment 1 API",
@@ -87,6 +100,13 @@ export class AppApi extends Construct {
         movieReviewsEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
+        )
+
+        const reviewsEndpoint = api.root.addResource("reviews");
+        const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
+        getAllReviewsByAuthorEndpoint.addMethod(
+            "GET",
+            new apig.LambdaIntegration(getAllReviewsByAuthorFn, { proxy: true })
         )
 
 
