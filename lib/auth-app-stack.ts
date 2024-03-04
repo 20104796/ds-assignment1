@@ -13,13 +13,11 @@ export class AuthAppStack extends cdk.Stack {
             selfSignUpEnabled: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
-
         const userPoolId = userPool.userPoolId;
 
         const appClient = userPool.addClient("AppClient", {
             authFlows: { userPassword: true },
         });
-
         const userPoolClientId = appClient.userPoolClientId;
 
         new AuthApi(this, 'AuthServiceApi', {

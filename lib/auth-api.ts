@@ -31,14 +31,7 @@ export class AuthApi extends Construct {
         this.auth = api.root.addResource("auth");
 
         this.addAuthRoute("signup", "POST", "SignupFn", "signup.ts");
-
-        this.addAuthRoute(
-            "confirm_signup",
-            "POST",
-            "ConfirmFn",
-            "confirm-signup.ts"
-        );
-
+        this.addAuthRoute("confirm_signup", "POST", "ConfirmFn", "confirm-signup.ts");
         this.addAuthRoute("signout", "GET", "SignoutFn", "signout.ts");
         this.addAuthRoute("signin", "POST", "SigninFn", "signin.ts");
     }
@@ -61,14 +54,11 @@ export class AuthApi extends Construct {
                 REGION: cdk.Aws.REGION,
             },
         };
-
         const resource = this.auth.addResource(resourceName);
-
         const fn = new node.NodejsFunction(this, fnName, {
             ...commonFnProps,
             entry: `${__dirname}/../lambda/auth/${fnEntry}`,
         });
-
         resource.addMethod(method, new apig.LambdaIntegration(fn));
     }
 }

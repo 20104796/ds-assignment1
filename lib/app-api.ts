@@ -21,6 +21,8 @@ export class AppApi extends Construct {
                 allowOrigins: apig.Cors.ALL_ORIGINS,
             },
         });
+        const protectedRes = appApi.root.addResource("protected");
+        const publicRes = appApi.root.addResource("public");
 
         const appCommonFnProps = {
             architecture: lambda.Architecture.ARM_64,
@@ -35,9 +37,7 @@ export class AppApi extends Construct {
             },
         };
 
-        const protectedRes = appApi.root.addResource("protected");
 
-        const publicRes = appApi.root.addResource("public");
 
         const protectedFn = new node.NodejsFunction(this, "ProtectedFn", {
             ...appCommonFnProps,
