@@ -78,6 +78,21 @@ export class AppApi extends Construct {
         });
         reviewsTable.grantReadData(getAllReviewsByAuthorFn)
 
+
+        const getMovieReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByAuthorFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/getMovieReviewsByAuthor.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
+
+
         //REST API
         const api = new apig.RestApi(this, "RestAPI", {
                 description: "Assignment 1 API",
@@ -97,18 +112,27 @@ export class AppApi extends Construct {
         const moviesEndpoint = api.root.addResource("movies");
         const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
         const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
+        /**
         movieReviewsEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
         )
+        */
 
+        const movieReviewsByAuthorEndpoint = movieReviewsEndpoint.addResource("{reviewerName}");
+        movieReviewsByAuthorEndpoint.addMethod(
+            "GET",
+            new apig.LambdaIntegration(getMovieReviewsByAuthorFn, { proxy: true })
+        )
+
+        /**
         const reviewsEndpoint = api.root.addResource("reviews");
         const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
         getAllReviewsByAuthorEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getAllReviewsByAuthorFn, { proxy: true })
         )
-
+        */
 
 
 
