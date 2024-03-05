@@ -47,6 +47,37 @@ export class AppApi extends Construct {
         });
 
 
+        //Lab Code
+        //Authorization
+        const appCommonFnProps = {
+            architecture: lambda.Architecture.ARM_64,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            handler: "handler",
+            environment: {
+                USER_POOL_ID: props.userPoolId,
+                CLIENT_ID: props.userPoolClientId,
+                REGION: cdk.Aws.REGION,
+            },
+        };
+
+        const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
+            ...appCommonFnProps,
+            entry: "./lambda/auth/authorizer.ts",
+        });
+
+        const requestAuthorizer = new apig.RequestAuthorizer(
+            this,
+            "RequestAuthorizer",
+            {
+                identitySources: [apig.IdentitySource.header("cookie")],
+                handler: authorizerFn,
+                resultsCacheTtl: cdk.Duration.minutes(0),
+            }
+        );
+        //Authorization
+
         const getMovieReviewsFn = new lambdanode.NodejsFunction(
             this,
             "GetMovieReviewsFn",
@@ -80,7 +111,7 @@ export class AppApi extends Construct {
 
 
 
-        /**
+        /** 不适用了 reviewerName 和 year 不能同时设置
         const getMovieReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByAuthorFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_16_X,
@@ -123,6 +154,21 @@ export class AppApi extends Construct {
         reviewsTable.grantReadData(getMovieReviewsByAuthorOrYearFn)
 
 
+        //add review
+        const newReviewFn = new lambdanode.NodejsFunction(this, "AddReviewFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/addReview.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadWriteData(newReviewFn)
+
+
         //REST API
         const api = new apig.RestApi(this, "RestAPI", {
                 description: "Assignment 1 API",
@@ -140,6 +186,17 @@ export class AppApi extends Construct {
         )
 
         const moviesEndpoint = api.root.addResource("movies");
+
+        const reviewsEndpoint = moviesEndpoint.addResource("reviews")
+        reviewsEndpoint.addMethod(
+            "POST",
+            new apig.LambdaIntegration(newReviewFn, { proxy: true }),
+            {
+                authorizer: requestAuthorizer,
+                authorizationType: apig.AuthorizationType.CUSTOM,
+            }
+        )
+
         const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
         const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
         /**
@@ -147,16 +204,16 @@ export class AppApi extends Construct {
             "GET",
             new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
         )
-        */
+
 
         const movieReviewsByAuthorOrYearEndpoint = movieReviewsEndpoint.addResource("{inputPara}");
         movieReviewsByAuthorOrYearEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsByAuthorOrYearFn, { proxy: true })
         )
+         */
 
-
-        /**
+        /** specific endpoints for reviews
         const reviewsEndpoint = api.root.addRvesource("reviews");
         const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
         getAllReviewsByAuthorEndpoint.addMethod(
@@ -167,21 +224,8 @@ export class AppApi extends Construct {
 
 
 
-        //Lab Code
-        //Auth Control
-        const appCommonFnProps = {
-            architecture: lambda.Architecture.ARM_64,
-            timeout: cdk.Duration.seconds(10),
-            memorySize: 128,
-            runtime: lambda.Runtime.NODEJS_16_X,
-            handler: "handler",
-            environment: {
-                USER_POOL_ID: props.userPoolId,
-                CLIENT_ID: props.userPoolClientId,
-                REGION: cdk.Aws.REGION,
-            },
-        };
 
+        //Lab
         /**
 
         const protectedFn = new node.NodejsFunction(this, "ProtectedFn", {
@@ -194,20 +238,7 @@ export class AppApi extends Construct {
             entry: "./lambda/public.ts",
         });
 
-        const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
-            ...appCommonFnProps,
-            entry: "./lambda/auth/authorizer.ts",
-        });
 
-        const requestAuthorizer = new apig.RequestAuthorizer(
-            this,
-            "RequestAuthorizer",
-            {
-                identitySources: [apig.IdentitySource.header("cookie")],
-                handler: authorizerFn,
-                resultsCacheTtl: cdk.Duration.minutes(0),
-            }
-        );
         */
 
     }
