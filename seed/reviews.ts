@@ -17,7 +17,7 @@ export const reviews : Review[] = [
     },
     {
         MovieId: 2345,
-        ReviewerName: "R03",
+        ReviewerName: "R01",
         ReviewDate: "2024-01-28",
         Content: "Quite GOOD !!!",
         Rating: 10
@@ -32,7 +32,7 @@ export const reviews : Review[] = [
     {
         MovieId: 6789,
         ReviewerName: "R05",
-        ReviewDate: "2024-03-01",
+        ReviewDate: "2023-03-01",
         Content: "GOOD",
         Rating: 9
     },

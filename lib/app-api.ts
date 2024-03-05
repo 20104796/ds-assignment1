@@ -79,6 +79,8 @@ export class AppApi extends Construct {
         reviewsTable.grantReadData(getAllReviewsByAuthorFn)
 
 
+
+        /**
         const getMovieReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByAuthorFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_16_X,
@@ -91,6 +93,34 @@ export class AppApi extends Construct {
             },
         });
         reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
+
+        const getMovieReviewsByYearFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByYearFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/getMovieReviewsByYear.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadData(getMovieReviewsByYearFn)
+
+         */
+
+        const getMovieReviewsByAuthorOrYearFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByAuthorOrYearFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/getMovieReviewsByAuthorOrYear.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadData(getMovieReviewsByAuthorOrYearFn)
 
 
         //REST API
@@ -119,14 +149,15 @@ export class AppApi extends Construct {
         )
         */
 
-        const movieReviewsByAuthorEndpoint = movieReviewsEndpoint.addResource("{reviewerName}");
-        movieReviewsByAuthorEndpoint.addMethod(
+        const movieReviewsByAuthorOrYearEndpoint = movieReviewsEndpoint.addResource("{inputPara}");
+        movieReviewsByAuthorOrYearEndpoint.addMethod(
             "GET",
-            new apig.LambdaIntegration(getMovieReviewsByAuthorFn, { proxy: true })
+            new apig.LambdaIntegration(getMovieReviewsByAuthorOrYearFn, { proxy: true })
         )
 
+
         /**
-        const reviewsEndpoint = api.root.addResource("reviews");
+        const reviewsEndpoint = api.root.addRvesource("reviews");
         const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
         getAllReviewsByAuthorEndpoint.addMethod(
             "GET",
