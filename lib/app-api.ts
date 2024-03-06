@@ -154,7 +154,6 @@ export class AppApi extends Construct {
         reviewsTable.grantReadData(getMovieReviewsByAuthorOrYearFn)
 
 
-        //add review
         const newReviewFn = new lambdanode.NodejsFunction(this, "AddReviewFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_16_X,
@@ -167,6 +166,21 @@ export class AppApi extends Construct {
             },
         });
         reviewsTable.grantReadWriteData(newReviewFn)
+
+        //update review
+        const updateReviewFn = new lambdanode.NodejsFunction(this, "UpdateReviewFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/updateReview.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadWriteData(updateReviewFn)
+
 
 
         //REST API
@@ -188,6 +202,8 @@ export class AppApi extends Construct {
         const moviesEndpoint = api.root.addResource("movies");
 
         const reviewsEndpoint = moviesEndpoint.addResource("reviews")
+
+
         reviewsEndpoint.addMethod(
             "POST",
             new apig.LambdaIntegration(newReviewFn, { proxy: true }),
@@ -197,8 +213,11 @@ export class AppApi extends Construct {
             }
         )
 
+
         const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
         const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
+
+
         /**
         movieReviewsEndpoint.addMethod(
             "GET",
@@ -206,12 +225,26 @@ export class AppApi extends Construct {
         )
 
 
+         */
+
+
         const movieReviewsByAuthorOrYearEndpoint = movieReviewsEndpoint.addResource("{inputPara}");
+        movieReviewsByAuthorOrYearEndpoint.addMethod(
+            "PUT",
+            new apig.LambdaIntegration(updateReviewFn, { proxy: true }),
+            {
+                authorizer: requestAuthorizer,
+                authorizationType: apig.AuthorizationType.CUSTOM,
+            }
+        )
+
+
+        /**
         movieReviewsByAuthorOrYearEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsByAuthorOrYearFn, { proxy: true })
         )
-         */
+        */
 
         /** specific endpoints for reviews
         const reviewsEndpoint = api.root.addRvesource("reviews");
@@ -222,24 +255,6 @@ export class AppApi extends Construct {
         )
         */
 
-
-
-
-        //Lab
-        /**
-
-        const protectedFn = new node.NodejsFunction(this, "ProtectedFn", {
-            ...appCommonFnProps,
-            entry: "./lambda/protected.ts",
-        });
-
-        const publicFn = new node.NodejsFunction(this, "PublicFn", {
-            ...appCommonFnProps,
-            entry: "./lambda/public.ts",
-        });
-
-
-        */
 
     }
 }
