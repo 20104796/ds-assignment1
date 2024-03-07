@@ -9,6 +9,8 @@ import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from '../shared/util';
 import { reviews } from '../seed/reviews';
 import * as lambdanode from 'aws-cdk-lib/aws-lambda-nodejs';
+import { aws_iam as iam } from 'aws-cdk-lib';
+
 
 type AppApiProps = {
     userPoolId: string;
@@ -182,6 +184,32 @@ export class AppApi extends Construct {
         reviewsTable.grantReadWriteData(updateReviewFn)
 
 
+        //translation?language=code
+        const getTranslationReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetTranslationReviewsByAuthorFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_16_X,
+            entry: `${__dirname}/../lambda/getTranslationReviewsByAuthor.ts`,
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: reviewsTable.tableName,
+                REGION: "eu-west-1",
+            },
+        });
+        reviewsTable.grantReadData(getTranslationReviewsByAuthorFn)
+
+
+        const translatePolicyStatement = new iam.PolicyStatement({
+            actions: ['translate:*'],
+            resources: ['*'],
+        });
+
+
+        // 将IAM策略声明添加到Lambda函数的执行角色
+        getTranslationReviewsByAuthorFn.addToRolePolicy(translatePolicyStatement);
+
+
+
 
         //REST API
         const api = new apig.RestApi(this, "RestAPI", {
@@ -204,6 +232,8 @@ export class AppApi extends Construct {
         const reviewsEndpoint = moviesEndpoint.addResource("reviews")
 
 
+
+        /**
         reviewsEndpoint.addMethod(
             "POST",
             new apig.LambdaIntegration(newReviewFn, { proxy: true }),
@@ -212,7 +242,7 @@ export class AppApi extends Construct {
                 authorizationType: apig.AuthorizationType.CUSTOM,
             }
         )
-
+         */
 
         const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
         const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
@@ -246,15 +276,25 @@ export class AppApi extends Construct {
         )
         */
 
-        /** specific endpoints for reviews
-        const reviewsEndpoint = api.root.addRvesource("reviews");
-        const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
+        // specific endpoints for reviews
+        const reviewEndpoint = api.root.addResource("reviews");
+        const getAllReviewsByAuthorEndpoint = reviewEndpoint.addResource("{reviewerName}")
+
+
         getAllReviewsByAuthorEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getAllReviewsByAuthorFn, { proxy: true })
         )
-        */
 
+
+
+        // /reviews/{reviewerName}/{movieId}/translation?language=code
+        const getReviewsByAuthorEndpoint  = getAllReviewsByAuthorEndpoint.addResource("{movieId}")
+        const getTranslationReviewsByAuthorEndpoint  = getReviewsByAuthorEndpoint.addResource("translation")
+        getTranslationReviewsByAuthorEndpoint.addMethod(
+            "GET",
+            new apig.LambdaIntegration(getTranslationReviewsByAuthorFn, { proxy: true })
+        )
 
     }
 }
