@@ -233,7 +233,6 @@ export class AppApi extends Construct {
 
 
 
-        /**
         reviewsEndpoint.addMethod(
             "POST",
             new apig.LambdaIntegration(newReviewFn, { proxy: true }),
@@ -242,20 +241,18 @@ export class AppApi extends Construct {
                 authorizationType: apig.AuthorizationType.CUSTOM,
             }
         )
-         */
+
 
         const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
         const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
 
 
-        /**
+
         movieReviewsEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
         )
 
-
-         */
 
 
         const movieReviewsByAuthorOrYearEndpoint = movieReviewsEndpoint.addResource("{inputPara}");
@@ -269,12 +266,12 @@ export class AppApi extends Construct {
         )
 
 
-        /**
+
         movieReviewsByAuthorOrYearEndpoint.addMethod(
             "GET",
             new apig.LambdaIntegration(getMovieReviewsByAuthorOrYearFn, { proxy: true })
         )
-        */
+
 
         // specific endpoints for reviews
         const reviewEndpoint = api.root.addResource("reviews");
